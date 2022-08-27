@@ -17,7 +17,8 @@ async def create_session(base_url, link, headers=HEADERS):
     async with aiohttp.ClientSession() as session:
         async with session.get(url=url, headers=headers) as resp:
             assert resp.status < 400
-            return resp
+            result = await resp.text()
+            return result
 
 
 async def get_response(base_url=URL, link=''):
@@ -34,4 +35,4 @@ async def get_response(base_url=URL, link=''):
 
 
 if __name__ == '__main__':
-    print(asyncio.run(get_response()).status)
+    print(asyncio.run(get_response()))
