@@ -8,3 +8,5 @@ HEADERS = {
     "X-Amzn-Trace-Id": "Root=1-630084e5-1013eda313f8fa782be2c3b0"
   }
 
+TITLES = ['title', 'country', 'price', 'url']
+
