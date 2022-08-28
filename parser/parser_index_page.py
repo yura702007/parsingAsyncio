@@ -1,4 +1,5 @@
 import re
+import time
 
 from bs4 import BeautifulSoup
 from get_response import get_response
@@ -27,9 +28,12 @@ def get_links(html_code=asyncio.run(get_response())):
 
 
 def main():
-    result = get_links()
+    start = time.time()
+    links = get_links()
+    result = asyncio.run(get_response(links=links))
     for res in result:
         print(res)
+    print(time.time() - start)
 
 
 if __name__ == '__main__':
