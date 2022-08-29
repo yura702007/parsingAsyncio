@@ -2,11 +2,9 @@ import re
 import time
 
 from bs4 import BeautifulSoup
-from get_response import get_response
-import asyncio
 
 
-def get_links(html_code=asyncio.run(get_response())):
+def get_links(html_code):
     """
     Получает html код главной страницы
     Извлекает из него ссылки на страницы категорий товаров
@@ -22,17 +20,13 @@ def get_links(html_code=asyncio.run(get_response())):
     for link in tuple_links:
         try:
             if link.text not in my_exceptions:
-                yield {link.text: link.get('href')}
+                yield [link.text, link.get('href')]
         except AttributeError:
             continue
 
 
-def main():
+async def main():
     start = time.time()
-    links = get_links()
-    result = asyncio.run(get_response(links=links))
-    for res in result:
-        print(res)
     print(time.time() - start)
 
 

@@ -1,22 +1,29 @@
+from pprint import pprint
+
 import aiohttp
 import asyncio
 from config_parser import URL, HEADERS
+from parser_index_page import get_links
+from product_page_parser import parser_page
 
 
-async def create_session(base_url, headers=HEADERS):
+async def create_session(base_url, header=None, headers=HEADERS):
     """
     Принимает url страницы и UserAgent
     Создаёт web-сессию
     Возвращает текст ответа на get-запрос к странице
     :param base_url: str
+    :param header: str
     :param headers: dict
     :return: aiohttp.client_reqrep.ClientResponse: response to a request
     """
     async with aiohttp.ClientSession() as session:
-        await asyncio.sleep(1)
         async with session.get(url=base_url, headers=headers) as resp:
-            assert resp.status < 400
-            return await resp.text()
+            while True:
+                assert resp.status < 400
+                if header:
+                    return {header: await resp.text()}
+                return await resp.text()
 
 
 async def get_response(base_url=URL, links=None):
@@ -28,7 +35,10 @@ async def get_response(base_url=URL, links=None):
     :return: aiohttp.client_reqrep.ClientResponse: response to a request
     """
     if links:
-        tasks = (asyncio.create_task(create_session(list(link.values())[0])) for link in links)
+        tasks = []
+        for header, link in links:
+            task = asyncio.create_task(create_session(header=header, base_url=link))
+            tasks.append(task)
         result = await asyncio.gather(*tasks, return_exceptions=True)
         return result
     task = asyncio.create_task(create_session(base_url=base_url))
@@ -37,8 +47,10 @@ async def get_response(base_url=URL, links=None):
 
 
 async def main():
-    result = await get_response()
-    print(result)
+    html_index_page = await get_response()
+    links = get_links(html_index_page)
+    html_product_pages = await get_response(links=links)
+    pprint(html_product_pages[0])
 
 
 if __name__ == '__main__':
