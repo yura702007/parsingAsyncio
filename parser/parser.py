@@ -1,4 +1,6 @@
 import asyncio
+import re
+from pprint import pprint
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -24,6 +26,7 @@ class Parser:
     async def run(self):
         task = asyncio.create_task(self.create_session())
         await task
+        self.get_links()
 
     async def create_session(self, header=None):
         async with ClientSession() as session:
@@ -36,8 +39,22 @@ class Parser:
                     self.code_index_page = await resp.text()
                     return
 
+    def get_links(self):
+        soup = BeautifulSoup(self.code_index_page, features='lxml')
+        list_menu = soup.find_all('li', class_='level_1')
+        tuple_links = (
+            elem.find('a', href=re.compile('/catalog/'), class_=False, text=True) for elem in list_menu
+        )
+        my_exceptions = ('Тематические подборки', 'Акции')
+        for link in tuple_links:
+            try:
+                if link.text not in my_exceptions:
+                    self.urls_list.append((link.text, link.get('href')))
+            except AttributeError:
+                continue
+
 
 if __name__ == '__main__':
     parser = Parser()
     asyncio.run(parser.run())
-    print(parser.code_index_page)
+    print(len(parser.urls_list))
