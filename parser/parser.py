@@ -20,22 +20,25 @@ class Parser:
         self.url = 'https://e-dostavka.by'
         self.code_index_page = None
         self.urls_list = []
-        self.products_page_dict = {}
+        self.products_page_list = []
         self.products_dict = {}
 
     async def run(self):
         task = asyncio.create_task(self.create_session())
         await task
         self.get_links()
+        task = asyncio.create_task(self.create_tasks())
+        await task
 
-    async def create_session(self, header=None):
+    async def create_session(self, header=None, url=None):
         async with ClientSession() as session:
-            async with session.get(url=self.url, headers=self.HEADERS) as resp:
+            if not url:
+                url = self.url
+            async with session.get(url=url, headers=self.HEADERS) as resp:
                 while True:
                     assert resp.status < 400
                     if header:
-                        self.products_page_dict[header] = await resp.text()
-                        return
+                        return {header: await resp.text()}
                     self.code_index_page = await resp.text()
                     return
 
@@ -53,8 +56,15 @@ class Parser:
             except AttributeError:
                 continue
 
+    async def create_tasks(self):
+        tasks = []
+        for header, link in self.urls_list:
+            task = asyncio.create_task(self.create_session(header=header, url=link))
+            tasks.append(task)
+        self.products_page_list = await asyncio.gather(*tasks, return_exceptions=True)
+
 
 if __name__ == '__main__':
     parser = Parser()
     asyncio.run(parser.run())
-    print(len(parser.urls_list))
+    print(len(parser.products_page_list))
