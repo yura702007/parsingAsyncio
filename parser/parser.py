@@ -1,7 +1,6 @@
 import asyncio
 import time
 import csv
-from pprint import pprint
 
 from bs4 import BeautifulSoup
 from get_response import create_session
@@ -19,13 +18,17 @@ class Parser:
             writer = csv.DictWriter(file, fieldnames=TITLES)
             writer.writeheader()
 
+    async def write_csv_file(self, data_dict):
+        with open(f'{self.title}.csv', 'a', encoding='utf8') as file:
+            writer = csv.DictWriter(file, fieldnames=TITLES)
+            writer.writerow(data_dict)
+
     async def get_html(self):
         task = asyncio.create_task(create_session(url=self.url))
         html_code = await asyncio.gather(task)
         return html_code[0]
 
     async def parse_html(self, html_code):
-        data = []
         soup = BeautifulSoup(html_code, features='lxml')
         cards_div = soup.find('div', class_='products_block__wrapper products_4_columns vertical')
         cards = cards_div.find_all('div', class_='form_wrapper')
@@ -39,21 +42,19 @@ class Parser:
             except AttributeError:
                 pass
             finally:
-                data.append(_dict)
+                await self.write_csv_file(_dict)
         if cards_div.find('a', class_='show_more'):
             self.url = URL + cards_div.find('a', class_='show_more').get('href')
         elif cards_div.find('a', class_='next_page'):
             self.url = URL + cards_div.find('a', class_='next_page').get('href')
         else:
             self.url = False
-        return data
 
     async def run(self):
         await self.create_csv_file()
-        result = []
         while self.url:
             page = await self.get_html()
-            result.extend(await self.parse_html(page))
+            await self.parse_html(page)
 
 
 if __name__ == '__main__':
