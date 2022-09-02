@@ -14,6 +14,11 @@ class Parser:
         self.url = url
         self.title = title
 
+    async def create_csv_file(self):
+        with open(f'{self.title}.csv', 'w', encoding='utf8') as file:
+            writer = csv.DictWriter(file, fieldnames=TITLES)
+            writer.writeheader()
+
     async def get_html(self):
         task = asyncio.create_task(create_session(url=self.url))
         html_code = await asyncio.gather(task)
@@ -44,6 +49,7 @@ class Parser:
         return data
 
     async def run(self):
+        await self.create_csv_file()
         result = []
         while self.url:
             page = await self.get_html()
