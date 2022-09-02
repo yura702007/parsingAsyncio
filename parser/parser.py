@@ -12,7 +12,7 @@ class Parser:
     async def get_html(self):
         task = asyncio.create_task(create_session(url=self.url))
         html_code = await asyncio.gather(task)
-        return html_code
+        return html_code[0]
 
     async def run(self):
         result = await self.get_html()
