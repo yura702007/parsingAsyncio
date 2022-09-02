@@ -1,5 +1,6 @@
 import asyncio
 import time
+import csv
 from pprint import pprint
 
 from bs4 import BeautifulSoup
@@ -34,9 +35,10 @@ class Parser:
                 pass
             finally:
                 data.append(_dict)
-        show_more = cards_div.find('a', class_='show_more')
-        if show_more:
-            self.url = URL + show_more.get('href')
+        if cards_div.find('a', class_='show_more'):
+            self.url = URL + cards_div.find('a', class_='show_more').get('href')
+        elif cards_div.find('a', class_='next_page'):
+            self.url = URL + cards_div.find('a', class_='next_page').get('href')
         else:
             self.url = False
         return data
