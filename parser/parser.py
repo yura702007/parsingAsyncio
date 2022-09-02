@@ -5,6 +5,7 @@ import csv
 from bs4 import BeautifulSoup
 from get_response import create_session
 from config_parser import URL, TITLES
+from parser_index_page import links
 
 
 class Parser:
@@ -57,22 +58,17 @@ class Parser:
             await self.parse_html(page)
 
 
-if __name__ == '__main__':
-    from parser_index_page import links
+async def main():
+    tasks = []
+    for _title, _url in links:
+        p = Parser(url=_url, title=_title)
+        task = asyncio.create_task(p.run())
+        tasks.append(task)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
-    # for _title, _url in links:
-    #     print(Parser(url=_url, title=_title))
+
+if __name__ == '__main__':
     print('start')
     start = time.time()
-    _title, _url = next(links)
-    p = Parser(title=_title, url=_url)
-    asyncio.run(p.run())
+    asyncio.run(main())
     print(time.time() - start)
-
-"""
-<a class="show_more" href="/catalog/8011.html?lazy_steep=2">
-            <i class="fa fa-refresh fa-spin">
-            </i>
-            Загружаю товары...
-           </a>
-"""
