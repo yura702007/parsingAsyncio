@@ -55,7 +55,9 @@ class Parser:
         await self.create_csv_file()
         while self.url:
             page = await self.get_html()
-            await self.parse_html(page)
+            if page:
+                print(self.title)
+                await self.parse_html(page)
 
 
 async def main():
@@ -64,11 +66,10 @@ async def main():
         p = Parser(url=_url, title=_title)
         task = asyncio.create_task(p.run())
         tasks.append(task)
-    await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks)
 
 
 if __name__ == '__main__':
-    print('start')
-    start = time.time()
+    print('start', time.strftime('%X'))
     asyncio.run(main())
-    print(time.time() - start)
+    print('end', time.strftime('%X'))
