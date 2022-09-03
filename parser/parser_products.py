@@ -14,14 +14,18 @@ class Parser:
     def __init__(self, url, title):
         self.url = url
         self.title = title
+        self.path = None
+
+    async def create_path(self):
+        self.path = Path('data', f'{date.today()}', f'{self.title}.csv')
 
     async def create_csv_file(self):
-        with open(f'{self.title}.csv', 'w', encoding='utf8') as file:
+        with open(self.path, 'w', encoding='utf8') as file:
             writer = csv.DictWriter(file, fieldnames=TITLES)
             writer.writeheader()
 
     async def write_csv_file(self, data_dict):
-        with open(f'{self.title}.csv', 'a', encoding='utf8') as file:
+        with open(self.path, 'a', encoding='utf8') as file:
             writer = csv.DictWriter(file, fieldnames=TITLES)
             writer.writerow(data_dict)
 
@@ -53,6 +57,7 @@ class Parser:
             self.url = False
 
     async def run(self):
+        await self.create_path()
         await self.create_csv_file()
         while self.url:
             page = await self.get_html()
@@ -69,6 +74,7 @@ def create_dir():
 
 
 async def main():
+    create_dir()
     tasks = []
     for _title, _url in links:
         p = Parser(url=_url, title=_title)
