@@ -1,7 +1,8 @@
 import asyncio
 import time
 import csv
-
+from pathlib import Path
+from datetime import date
 from bs4 import BeautifulSoup
 from get_response import create_session
 from config_parser import URL, TITLES
@@ -56,8 +57,15 @@ class Parser:
         while self.url:
             page = await self.get_html()
             if page:
-                print(self.title)
                 await self.parse_html(page)
+
+
+def create_dir():
+    try:
+        path = Path('data', f'{date.today()}')
+        path.mkdir(parents=True)
+    except FileExistsError:
+        pass
 
 
 async def main():
