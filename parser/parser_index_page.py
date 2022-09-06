@@ -1,40 +1,62 @@
 import asyncio
 import re
-import time
-from get_response import get_response
-
+from datetime import date
 from bs4 import BeautifulSoup
+from aiohttp import ClientSession
+from pathlib import Path
+from config_parser import URL, HEADERS
 
 
-def get_links(html_code=asyncio.run(get_response())[0]):
-    """
-    Получает html код главной страницы
-    Извлекает из него ссылки на страницы категорий товаров
-    :param html_code: str
-    :yield: {title: str: url: str}:
-    """
-    soup = BeautifulSoup(html_code, features='lxml')
-    list_menu = soup.find_all('li', class_='level_1')
-    tuple_links = (
-        elem.find('a', href=re.compile('/catalog/'), class_=False, text=True) for elem in list_menu
-    )
-    my_exceptions = ('Тематические подборки', 'Акции')
-    for link in tuple_links:
+class Parser:
+    headers = HEADERS
+
+    def __init__(self, url=URL):
+        self.url = url
+        self.path = None
+
+    async def run(self):
+        self.create_dir()
+        task = asyncio.create_task(self.parse_page())
+        urls = await task
+        return urls
+
+    def create_dir(self):
         try:
-            if link.text not in my_exceptions:
-                yield link.text, link.get('href')
-        except AttributeError:
-            continue
+            self.path = Path('..', 'data', f'{date.today()}')
+            self.path.mkdir(parents=True)
+        except FileExistsError:
+            pass
 
+    async def create_session(self):
+        async with ClientSession() as session:
+            async with session.get(url=self.url, headers=self.headers) as resp:
+                try:
+                    assert resp.status == 200
+                    return await resp.text()
+                except AssertionError:
+                    return
 
-links = get_links()
+    async def parse_page(self):
+        urls = []
+        html_code = await self.create_session()
+        soup = BeautifulSoup(html_code, features='lxml')
+        list_menu = soup.find_all('li', class_='level_1')
+        tuple_links = (
+            elem.find('a', href=re.compile('/catalog/'), class_=False, text=True) for elem in list_menu
+        )
+        my_exceptions = ('Тематические подборки', 'Акции', 'Уцененные товары', 'Карты лояльности, сувениры')
+        for link in tuple_links:
+            try:
+                if link.text not in my_exceptions:
+                    urls.append((link.get('href'), link.text))
+            except AttributeError:
+                continue
+        return urls
 
 
 def main():
-    start = time.time()
-    for link in links:
-        print(link)
-    print(time.time() - start)
+    p = Parser()
+    print(asyncio.run(p.run()))
 
 
 if __name__ == '__main__':

@@ -60,9 +60,12 @@ class Parser:
         await self.create_path()
         await self.create_csv_file()
         while self.url:
-            page = await self.get_html()
+            page = await asyncio.shield((self.get_html()))
+            print(self.title)
             if page:
                 await self.parse_html(page)
+            else:
+                print('fail', page, self.title)
 
 
 def create_dir():
