@@ -1,5 +1,8 @@
 import asyncio
-from parser_index_page import Parser
+import csv
+from pathlib import Path
+from datetime import date
+from parser_index_page import Parser, urls
 from config_parser import URL, TITLES
 
 
@@ -11,23 +14,25 @@ class ParserProducts(Parser):
         super().__init__(url)
         self.title = title
 
-    def __repr__(self):
-        return self.title
-
     async def run(self):
-        print(f'{self.title} is called')
+        await self.create_file()
+        await self.create_session()
+
+    async def create_file(self):
+        path = Path('..', 'data', f'{date.today()}', f'{self.title}.csv')
+        with open(path, 'w', encoding='utf8') as file:
+            writer = csv.DictWriter(file, fieldnames=self.titles)
+            writer.writeheader()
 
 
 async def main():
-    p = Parser()
-    task_0 = p.run()
-    urls = await asyncio.create_task(task_0)
     tasks = []
     for url, title in urls:
-        pp = ParserProducts(url=url, title=title)
-        task = await asyncio.create_task(pp.run())
+        p = ParserProducts(url=url, title=title)
+        task = asyncio.create_task(p.run())
         tasks.append(task)
-    await asyncio.gather(*tasks, return_exceptions=True)
+    for t in tasks:
+        await t
 
 
 if __name__ == '__main__':

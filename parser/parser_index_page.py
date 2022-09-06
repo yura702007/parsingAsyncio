@@ -17,8 +17,8 @@ class Parser:
     async def run(self):
         self.create_dir()
         task = asyncio.create_task(self.parse_page())
-        urls = await task
-        return urls
+        result = await task
+        return result
 
     def create_dir(self):
         try:
@@ -37,7 +37,7 @@ class Parser:
                     return
 
     async def parse_page(self):
-        urls = []
+        links = []
         html_code = await self.create_session()
         soup = BeautifulSoup(html_code, features='lxml')
         list_menu = soup.find_all('li', class_='level_1')
@@ -48,10 +48,10 @@ class Parser:
         for link in tuple_links:
             try:
                 if link.text not in my_exceptions:
-                    urls.append((link.get('href'), link.text))
+                    links.append((link.get('href'), link.text))
             except AttributeError:
                 continue
-        return urls
+        return links
 
 
 urls = asyncio.run(Parser().run())
