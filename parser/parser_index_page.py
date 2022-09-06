@@ -54,9 +54,12 @@ class Parser:
         return urls
 
 
+urls = asyncio.run(Parser().run())
+
+
 def main():
-    p = Parser()
-    print(asyncio.run(p.run()))
+    for url, title in urls:
+        print(url, title)
 
 
 if __name__ == '__main__':
