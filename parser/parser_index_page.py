@@ -1,22 +1,21 @@
 import asyncio
-import re
 from datetime import date
 from bs4 import BeautifulSoup
 from aiohttp import ClientSession
 from pathlib import Path
-from config_parser import URL, HEADERS
+from config_parser import HEADERS
 
 
 class Parser:
     headers = HEADERS
 
-    def __init__(self, url=URL):
+    def __init__(self, url='https://e-dostavka.by/catalog/'):
         self.url = url
         self.path = None
 
     async def run(self):
         self.create_dir()
-        task = asyncio.create_task(self.parse_page())
+        task = asyncio.create_task(self.pars_page())
         result = await task
         return result
 
@@ -36,21 +35,21 @@ class Parser:
                 except AssertionError:
                     return
 
-    async def parse_page(self):
+    async def pars_page(self):
+        _html = await self.create_session()
+        soup = BeautifulSoup(_html, 'lxml')
+        block = soup.find('div', class_='rubrics_table clearfix')
+        catalog = block.find_all('div')
+        my_exception = ('Уцененные товары', 'Карты лояльности, сувениры')
         links = []
-        html_code = await self.create_session()
-        soup = BeautifulSoup(html_code, features='lxml')
-        list_menu = soup.find_all('li', class_='level_1')
-        tuple_links = (
-            elem.find('a', href=re.compile('/catalog/'), class_=False, text=True) for elem in list_menu
-        )
-        my_exceptions = ('Тематические подборки', 'Акции', 'Уцененные товары', 'Карты лояльности, сувениры')
-        for link in tuple_links:
-            try:
-                if link.text not in my_exceptions:
-                    links.append((link.get('href'), link.text))
-            except AttributeError:
-                continue
+        for category in catalog:
+            rubrics = category.find_all('div', class_='item')
+            if rubrics:
+                if category.find('div', class_='title').text in my_exception:
+                    continue
+                for rubric in rubrics:
+                    a = rubric.find('a')
+                    links.append((a.get('href'), a.text))
         return links
 
 
