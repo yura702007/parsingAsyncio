@@ -1,5 +1,7 @@
 import asyncio
 from datetime import date
+from pprint import pprint
+
 from bs4 import BeautifulSoup
 from aiohttp import ClientSession
 from pathlib import Path
@@ -40,25 +42,30 @@ class Parser:
         soup = BeautifulSoup(_html, 'lxml')
         block = soup.find('div', class_='rubrics_table clearfix')
         catalog = block.find_all('div')
-        my_exception = ('Уцененные товары', 'Карты лояльности, сувениры')
-        links = []
+        my_exception = ('Уцененные товары', 'Карты лояльности, сувениры', 'Шеф-онлайн')
+        category_dict = {}
         for category in catalog:
+            links = []
             rubrics = category.find_all('div', class_='item')
             if rubrics:
                 if category.find('div', class_='title').text in my_exception:
                     continue
+                category_name = category.find('div', class_='title').text
                 for rubric in rubrics:
                     a = rubric.find('a')
                     links.append((a.get('href'), a.text))
-        return links
+                category_dict[category_name] = links
+        return category_dict
 
 
 urls = asyncio.run(Parser().run())
 
 
 def main():
-    for url, title in urls:
-        print(url, title)
+    for key, value in urls.items():
+        print(key)
+        pprint(value)
+        print()
 
 
 if __name__ == '__main__':
