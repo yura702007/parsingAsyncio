@@ -29,11 +29,12 @@ class ParserProducts(Parser):
             writer.writeheader()
 
     async def parser_page(self, html_code):
-        _dict = {'title': None, 'price': None, 'url': None, 'country': None}
+        lst = []
         soup = BeautifulSoup(html_code, features='lxml')
         product_block = soup.find('div', class_='products_block__wrapper products_4_columns vertical')
         product_cards = product_block.find_all('div', class_='form_wrapper')
         for card in product_cards:
+            _dict = {'title': None, 'price': None, 'url': None, 'country': None}
             try:
                 _dict['title'] = card.find('div', class_='title').text.strip()
                 _dict['price'] = card.find('div', class_='price').text.strip()
@@ -42,12 +43,14 @@ class ParserProducts(Parser):
             except AttributeError:
                 pass
             finally:
-                await self.write_file(dict_product=_dict)
+                lst.append(_dict)
+        await self.write_file(list_product=lst)
 
-    async def write_file(self, dict_product):
+    async def write_file(self, list_product):
         with open(self.path, 'a', encoding='utf8') as file:
             writer = csv.DictWriter(file, fieldnames=self.titles)
-            writer.writerow(dict_product)
+            for row in list_product:
+                writer.writerow(row)
 
 
 async def main():
@@ -62,4 +65,3 @@ if __name__ == '__main__':
     start = time.strftime('%X')
     asyncio.run(main())
     print(f"{start} - {time.strftime('%X')}")
-
