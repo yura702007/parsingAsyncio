@@ -19,8 +19,11 @@ class ParserProducts(Parser):
 
     async def run(self):
         await self.create_file()
-        _html = await asyncio.gather(self.create_session(), return_exceptions=True)
-        await self.parser_page(html_code=_html[0])
+        while self.url:
+            print(self.title, self.url)
+            task = asyncio.create_task(self.create_session())
+            _html = await task
+            await self.parser_page(html_code=_html)
 
     async def create_file(self):
         self.path = Path('..', 'data', f'{date.today()}', f'{self.title}.csv')
@@ -31,6 +34,9 @@ class ParserProducts(Parser):
     async def parser_page(self, html_code):
         lst = []
         soup = BeautifulSoup(html_code, features='lxml')
+        next_products = soup.find('a', class_='show_more')
+        next_page = soup.find('a', class_='next_page_link')
+        self.update_url(a_down=next_products, a_next=next_page)
         product_block = soup.find('div', class_='products_block__wrapper products_4_columns vertical')
         product_cards = product_block.find_all('div', class_='form_wrapper')
         for card in product_cards:
@@ -51,6 +57,14 @@ class ParserProducts(Parser):
             writer = csv.DictWriter(file, fieldnames=self.titles)
             for row in list_product:
                 writer.writerow(row)
+
+    def update_url(self, a_down, a_next):
+        if a_down:
+            self.url = self.base_url + a_down.get('href')
+        elif a_next:
+            self.url = self.base_url + a_next.get('href')
+        else:
+            self.url = None
 
 
 async def main():
