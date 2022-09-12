@@ -12,21 +12,30 @@ class ParserProducts(Parser):
     base_url = URL
     titles = TITLES
 
-    def __init__(self, url, title):
+    def __init__(self, category_name, url, rubric_name):
         super().__init__(url)
-        self.title = title
+        self.category_name = category_name
+        self.rubric_name = rubric_name
         self.path = None
 
     async def run(self):
+        await self.create_category_dir()
         await self.create_file()
         while self.url:
-            print(self.title, self.url)
+            print(self.rubric_name, self.url)
             task = asyncio.create_task(self.create_session())
             _html = await task
             await self.parser_page(html_code=_html)
 
+    async def create_category_dir(self):
+        try:
+            self.path = Path('..', 'data', f'{date.today()}', f'{self.category_name}')
+            self.path.mkdir(parents=True)
+        except FileExistsError:
+            pass
+
     async def create_file(self):
-        self.path = Path('..', 'data', f'{date.today()}', f'{self.title}.csv')
+        self.path = Path('..', 'data', f'{date.today()}', f'{self.category_name}', f'{self.rubric_name}.csv')
         with open(self.path, 'w', encoding='utf8') as file:
             writer = csv.DictWriter(file, fieldnames=self.titles)
             writer.writeheader()
@@ -72,8 +81,9 @@ class ParserProducts(Parser):
 
 async def main():
     tasks = []
-    for url, title in urls:
-        tasks.append(await ParserProducts(url=url, title=title).run())
+    for category, rubrics in urls.items():
+        for url_, rubric in rubrics:
+            tasks.append(await ParserProducts(category_name=category, url=url_, rubric_name=rubric).run())
     await asyncio.gather(asyncio.to_thread(*tasks), return_exceptions=True)
 
 
