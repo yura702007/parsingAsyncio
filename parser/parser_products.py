@@ -1,11 +1,15 @@
 import asyncio
 import csv
+import logging
+import logging.config
 from pathlib import Path
 from datetime import date
 from parser_index_page import Parser, urls
 from config_parser import URL, TITLES
 from bs4 import BeautifulSoup
 import time
+
+logging.config.fileConfig('logging.conf')
 
 
 class ParserProducts(Parser):
@@ -22,7 +26,6 @@ class ParserProducts(Parser):
         await self.create_category_dir()
         await self.create_file()
         while self.url:
-            print(self.rubric_name, self.url)
             task = asyncio.create_task(self.create_session())
             _html = await task
             await self.parser_page(html_code=_html)
@@ -41,28 +44,33 @@ class ParserProducts(Parser):
             writer.writeheader()
 
     async def parser_page(self, html_code):
-        lst = []
-        soup = BeautifulSoup(html_code, features='lxml')
-        next_products = soup.find('a', class_='show_more')
-        next_page = soup.find('a', class_='next_page_link')
-        self.update_url(a_down=next_products, a_next=next_page)
-        product_block = soup.find('div', class_='products_block__wrapper products_4_columns vertical')
         try:
-            product_cards = product_block.find_all('div', class_='form_wrapper')
-            for card in product_cards:
-                _dict = {'title': None, 'price': None, 'url': None, 'country': None}
-                try:
-                    _dict['title'] = card.find('div', class_='title').text.strip()
-                    _dict['price'] = card.find('div', class_='price').text.strip()
-                    _dict['url'] = card.find('a', class_='fancy_ajax').get('href').strip()
-                    _dict['country'] = card.find('div', class_='small_country').text.strip()
-                except AttributeError:
-                    pass
-                finally:
-                    lst.append(_dict)
-        except AttributeError:
-            return
-        await self.write_file(list_product=lst)
+            lst = []
+            soup = BeautifulSoup(html_code, features='lxml')
+            next_products = soup.find('a', class_='show_more')
+            next_page = soup.find('a', class_='next_page_link')
+            self.update_url(a_down=next_products, a_next=next_page)
+            product_block = soup.find('div', class_='products_block__wrapper products_4_columns vertical')
+            try:
+                product_cards = product_block.find_all('div', class_='form_wrapper')
+                for card in product_cards:
+                    _dict = {'title': None, 'price': None, 'url': None, 'country': None}
+                    try:
+                        _dict['title'] = card.find('div', class_='title').text.strip()
+                        _dict['price'] = card.find('div', class_='price').text.strip()
+                        _dict['url'] = card.find('a', class_='fancy_ajax').get('href').strip()
+                        _dict['country'] = card.find('div', class_='small_country').text.strip()
+                    except AttributeError as exc:
+                        logging.error(exc, exc_info=True)
+                        pass
+                    finally:
+                        lst.append(_dict)
+            except AttributeError as exc:
+                logging.error(exc, exc_info=True)
+                return
+            await self.write_file(list_product=lst)
+        except TypeError as exc:
+            logging.error(f'{exc}, {self.url}', exc_info=True)
 
     async def write_file(self, list_product):
         with open(self.path, 'a', encoding='utf8') as file:
@@ -88,7 +96,9 @@ async def main():
 
 
 if __name__ == '__main__':
-    print('start')
     start = time.strftime('%X')
+    print('start', start)
     asyncio.run(main())
-    print(f"{start} - {time.strftime('%X')}")
+    end_run = time.strftime('%X')
+    print('end', end_run)
+    print(f"{start} - {end_run}")
