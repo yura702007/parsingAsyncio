@@ -4,6 +4,7 @@ import logging.config
 from datetime import date
 from pprint import pprint
 
+import aiohttp.client_exceptions
 from bs4 import BeautifulSoup
 from aiohttp import ClientSession
 from pathlib import Path
@@ -41,8 +42,8 @@ class Parser:
                 try:
                     assert resp.status == 200
                     return await resp.text()
-                except AssertionError as exc:
-                    logging.error(exc, exc_info=True)
+                except (AssertionError, aiohttp.client_exceptions.ClientConnectionError) as exc:
+                    logging.error(exc, self.url, exc_info=True)
                     return
 
     async def pars_page(self):

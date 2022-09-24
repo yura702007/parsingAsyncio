@@ -26,6 +26,7 @@ class ParserProducts(Parser):
         await self.create_category_dir()
         await self.create_file()
         while self.url:
+            print(self.url)
             task = asyncio.create_task(self.create_session())
             _html = await task
             await self.parser_page(html_code=_html)
@@ -61,12 +62,12 @@ class ParserProducts(Parser):
                         _dict['url'] = card.find('a', class_='fancy_ajax').get('href').strip()
                         _dict['country'] = card.find('div', class_='small_country').text.strip()
                     except AttributeError as exc:
-                        logging.error(exc, exc_info=True)
+                        logging.warning(exc, exc_info=True)
                         pass
                     finally:
                         lst.append(_dict)
             except AttributeError as exc:
-                logging.error(exc, exc_info=True)
+                logging.warning(exc, exc_info=True)
                 return
             await self.write_file(list_product=lst)
         except TypeError as exc:
